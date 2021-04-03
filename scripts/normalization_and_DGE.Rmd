@@ -1,0 +1,66 @@
+---
+title: "DESEQ2"
+output: html_notebook
+---
+
+Normalization of read counts using DESEQ2
+
+# Install packages
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("pasilla")
+BiocManager::install("DESeq2")
+
+```
+
+## Testing the waters
+
+```{r}
+
+directory <- system.file("extdata", package="pasilla",
+                         mustWork=TRUE)
+
+sampleFiles <- grep("treated",list.files(directory),value=TRUE)
+sampleCondition <- sub("(.*treated).*","\\1",sampleFiles)
+sampleTable <- data.frame(sampleName = sampleFiles,
+                          fileName = sampleFiles,
+                          condition = sampleCondition)
+
+sampleTable$condition <- factor(sampleTable$condition)
+
+library("DESeq2")
+ddsHTSeq <- DESeqDataSetFromHTSeqCount(sampleTable = sampleTable,
+                                       directory = directory,
+                                       design= ~ condition)
+ddsHTSeq
+
+keep <- rowSums(counts(ddsHTSeq)) >= 5
+ddsHTSeq <- ddsHTSeq[keep,]
+
+```
+
+
+##
+
+```{r}
+
+dds <- DESeq(ddsHTSeq)
+res <- results(dds)
+res
+
+res <- results(dds, contrast=c("condition","treated","untreated"))
+res
+
+resultsNames(dds)
+resLFC <- lfcShrink(dds, coef="condition_treated_vs_untreated", type="apeglm")
+
+plotMA(res, ylim=c(-2,2))
+
+
+```
+
+
+##

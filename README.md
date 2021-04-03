@@ -57,7 +57,19 @@ For a single fastq file
 ```bash
 STAR --runThreadN 2 --genomeDir ../DB/STAR_index/ --readFilesCommand gunzip -c --readFilesIn ../cleanFastq/AC1_AACCAG_L001_R1_001.40bp_3prime.fq.gz --alignIntronMin 30 --alignIntronMax 7000 –outFilterIntronMotifs RemoveNoncanonicalUnannotated --outFilterMultimapNmax 20 --outFileNamePrefix ./AC1 --outSAMtype BAM SortedByCoordinate --outReadsUnmapped ./
 ```
-For all the fasta file check [script1][]
+For batch processing all the fastq files check the [Mapping Script][mapping]
+
+### Counting
+We used the HTseq count library using default settings
+
+For a single bam file
+```bash
+htseq-count ../Bam/AC1Aligned.sortedByCoord.out.bam ../DB/Annotation/Athaliana_447_Araport11.gene_exons.gff3 --idattr Parent -s no > AC1.txt
+```
+For batch processing all the bam files check the [Counting Script][counting] 
+
+### Normalization and DGE
+
 
 
 
@@ -66,3 +78,5 @@ For all the fasta file check [script1][]
 [trimg]: https://github.com/FelixKrueger/TrimGalore
 [star]: https://github.com/alexdobin/STAR
 [phyto]: https://phytozome.jgi.doe.gov/pz/portal.html#!bulk?org=Org_Athaliana
+[mapping]: scripts/mapping.sh
+[counting]: script/counting.sh
