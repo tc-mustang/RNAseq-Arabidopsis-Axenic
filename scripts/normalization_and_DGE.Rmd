@@ -1,66 +1,226 @@
 ---
 title: "DESEQ2"
-output: html_notebook
+output:
+  html_notebook: default
+  pdf_document: default
 ---
 
 Normalization of read counts using DESEQ2
 
-# Install packages
+## Install packages
 
-```{r}
+```{r eval=FALSE, include=FALSE}
+
+## Run once
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-
+BiocManager::install(version = "3.12")
+BiocManager::install("bioconductor")
 BiocManager::install("pasilla")
 BiocManager::install("DESeq2")
+BiocManager::install("apeglm")
+BiocManager::install("vsn")
+BiocManager::install("clusterProfiler")
+BiocManager::install("pathview")
+BiocManager::install("enrichplot")
 
 ```
 
-## Testing the waters
+## Load libraries
 
 ```{r}
 
-directory <- system.file("extdata", package="pasilla",
-                         mustWork=TRUE)
+library(DESeq2)
+library(tidyr)
+library(dplyr)
+library(magrittr)
+library(apeglm)
+library(vsn)
+library(pheatmap)
+library(ggplot2)
+library(wesanderson)
+library(clusterProfiler)
+library(enrichplot)
 
-sampleFiles <- grep("treated",list.files(directory),value=TRUE)
-sampleCondition <- sub("(.*treated).*","\\1",sampleFiles)
-sampleTable <- data.frame(sampleName = sampleFiles,
-                          fileName = sampleFiles,
-                          condition = sampleCondition)
+```
 
-sampleTable$condition <- factor(sampleTable$condition)
+## Loading and preparing the data
 
-library("DESeq2")
-ddsHTSeq <- DESeqDataSetFromHTSeqCount(sampleTable = sampleTable,
+```{r}
+
+directory <- "/home/roberto/JOYN/Transcriptome/Counts"
+sampleTable <- read.table("/home/roberto/JOYN/Transcriptome/metadata/metadata.tsv", header = T) %>%
+  filter(sampleName != "MS") %>%                      # remove the plants grown under MS
+  mutate(condition=as.factor(condition)) %>%          # change type of those columns to factor
+  mutate(location=as.factor(location))
+  
+
+# Here we are using the location + condition model w/o interactions as every location will be run separately
+Ara_RNA <- DESeqDataSetFromHTSeqCount(sampleTable = sampleTable,
                                        directory = directory,
-                                       design= ~ condition)
-ddsHTSeq
+                                       design= ~ location + condition)
 
-keep <- rowSums(counts(ddsHTSeq)) >= 5
-ddsHTSeq <- ddsHTSeq[keep,]
+
+Ara_RNA$condition
 
 ```
 
-
-##
+### Filtering genes with really low counts
 
 ```{r}
 
-dds <- DESeq(ddsHTSeq)
-res <- results(dds)
-res
+keep <- rowSums(counts(Ara_RNA)) >= 10
+Ara_RNA <- Ara_RNA[keep,]
+Ara_RNA$condition
+```
 
-res <- results(dds, contrast=c("condition","treated","untreated"))
-res
+## Differential expression analysis
 
-resultsNames(dds)
-resLFC <- lfcShrink(dds, coef="condition_treated_vs_untreated", type="apeglm")
+We run the DE analysis and summarize the results
 
-plotMA(res, ylim=c(-2,2))
+```{r}
+Ara_RNA <- DESeq(Ara_RNA)
+
+resultados <- results(Ara_RNA,
+                     contrast=c("condition", "axenic", "holoxenic"), alpha = 0.01)
+summary(resultados)
+
+```
+
+### Get some data in tables for further analysis
+
+```{r}
+
+#Data frame including the DEG analysis
+DEG_dataframe <- as.data.frame(resultados)
+
+# We can filter by adjusted p-values
+DEG <- DEG_dataframe %>%
+  filter(padj < 0.01) %>%
+  arrange(padj) 
+
+#Data frame with the normalized count for all the conditions
+normalized_counts <- counts(Ara_RNA, normalized=T)
+
+#Normalized reads of a particular gene or list of genes of interest
+gAT2G43620 <- as.data.frame(normalized_counts) %>%
+  filter(row.names(normalized_counts) %in% c("AT2G43620"))
+
+# Showing a clear example of a gene down regulated under axenic conditions
+gAT2G43620
+
+```
+
+### Classic volcano plot
+
+```{r}
+plotMA(resultados, ylim=c(-2,2))
+```
+
+### Testing Shrinkage (not recommended when having an interaction term due to over shrinking)
+
+```{r}
+
+resultsNames(Ara_RNA)
+resultados_shrinkage <- lfcShrink(Ara_RNA, coef ="condition_holoxenic_vs_axenic", type="apeglm")
+check <- as.data.frame(resultados) %>%
+  filter(padj < 0.05)
+plotMA(resultados_shrinkage, ylim=c(-2,2))
+
+```
+
+## Quality Control:
+
+### Variance dispersion (diagnostics)
+
+```{r}
+
+plotDispEsts(Ara_RNA)
+
+```
+
+### Heatmap on the count matrix (diagnostics)
+
+```{r}
+
+
+select <- order(rowMeans(counts(Ara_RNA,normalized=TRUE)),
+                decreasing=TRUE)[1:40]
+df <- as.data.frame(colData(Ara_RNA)[,c("condition","location")])
+ntd <- normTransform(Ara_RNA)
+pheatmap(assay(ntd)[select,], cluster_rows=FALSE, show_rownames=F,
+         cluster_cols=FALSE, annotation_col=df)
+
+#assay(ntd)
+```
+
+### Checking that the reps cluster together
+
+```{r}
+
+vsd <- vst(Ara_RNA, blind=F)
+plotPCA(vsd, intgroup=c("condition", "location"))
+
+```
+
+### Nicer plot for manuscript
+
+```{r}
+
+pcaData <- plotPCA(vsd, intgroup=c("condition", "location"), returnData=TRUE)
+percentVar <- round(100.00 * attr(pcaData, "percentVar"))
+
+
+colores <- wes_palette("Chevalier1")
+ggplot(pcaData, aes(PC1, PC2, color=location, shape=condition)) +
+  geom_point(size=4) +
+  scale_color_manual(values=c(colores[1], colores[3], colores[2])) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed() +
+  theme_bw()
+
+```
+
+## Enrichment analysis (GSEA)
+
+```{r}
+
+options(connectionObserver = NULL)
+organism <- "org.At.tair.db"
+#BiocManager::install(organism)
+library(organism, character.only = T)
+
+
+
+df <- visualizar
+original_gene_list <- df$log2FoldChange   #vector of fold change
+names(original_gene_list) <- rownames(df) #add gene names to the vector
+gene_list<-na.omit(original_gene_list)    #remove NAs
+gene_list<- sort(gene_list, decreasing=T) #sort it out
+
+organism <- org.At.tair.db
+gse <- gseGO(geneList=gene_list, 
+             ont ="ALL", 
+             keyType = "TAIR", 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
 
 
 ```
 
+### Plots
 
-##
+```{r, fig.height=8, fig.width=8}
+
+require(DOSE)
+dotplot(gse, showCategory=10, split=".sign") + 
+  facet_grid(.~.sign)
+
+
+
+```

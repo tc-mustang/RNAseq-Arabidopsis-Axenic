@@ -3,11 +3,9 @@ RNAseq analysis associated to the article: "Fill the blank"
 
 ![Experiment design](images/Ara.png)
 
-Sequence data associated with this repository is publicly available at NCBI SRA ""
+Sequence data associated with this repository will be publicly available at NCBI Bioproject: [PRJNA725487][BioProject] (Temporary relase date: 2022-01-01)
 
 ## Experimental Design
-
-
 
 ### Libraries:
 - Arabidopsis axenic under California Soil  (3 reps)
@@ -73,6 +71,8 @@ For batch processing all the bam files check the [Counting Script][counting]
 
 
 
+
+
 <!-- Markdown link & img dfn's -->
 [fastQC]: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 [trimg]: https://github.com/FelixKrueger/TrimGalore
@@ -80,3 +80,4 @@ For batch processing all the bam files check the [Counting Script][counting]
 [phyto]: https://phytozome.jgi.doe.gov/pz/portal.html#!bulk?org=Org_Athaliana
 [mapping]: scripts/mapping.sh
 [counting]: script/counting.sh
+[BioProject]: https://www.ncbi.nlm.nih.gov/sra/PRJNA725487
