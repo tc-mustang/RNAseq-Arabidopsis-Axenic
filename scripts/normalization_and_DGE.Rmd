@@ -224,3 +224,86 @@ dotplot(gse, showCategory=10, split=".sign") +
 
 
 ```
+
+## DGE only in Michigan
+
+```{r}
+
+directory <- "/home/roberto/JOYN/Transcriptome/Counts"
+sampleMichigan <- read.table("/home/roberto/JOYN/Transcriptome/metadata/metadata.tsv", header = T) %>%
+  filter(sampleName != "MS") %>%                      # remove the plants grown under MS
+  mutate(condition=as.factor(condition)) %>%          # change type of those columns to factor
+  mutate(location=as.factor(location)) %>%
+  filter(location=="Michigan")
+  
+
+# Here we are using the location + condition model w/o interactions as every location will be run separately
+Ara_Michigan <- DESeqDataSetFromHTSeqCount(sampleTable = sampleMichigan,
+                                       directory = directory,
+                                       design= ~ condition)
+
+Ara_Michigan <- DESeq(Ara_Michigan)
+resultados_Michigan <- results(Ara_Michigan,
+                     contrast=c("condition", "axenic", "holoxenic"), alpha = 0.01)
+summary(resultados_Michigan)
+plotMA(resultados_Michigan, ylim=c(-2,2))
+
+```
+
+
+
+
+```{r}
+
+select <- order(rowMeans(counts(Ara_Michigan,normalized=TRUE)),
+                decreasing=TRUE)[1:40]
+df <- as.data.frame(colData(Ara_Michigan)[,c("condition","location")])
+ntd <- normTransform(Ara_Michigan)
+pheatmap(assay(ntd)[select,], cluster_rows=FALSE, show_rownames=F,
+         cluster_cols=FALSE, annotation_col=df)
+
+colData(Ara_Michigan)
+```
+
+```{r}
+
+DEG_dataframe_M <- as.data.frame(resultados_Michigan)
+
+df <- DEG_dataframe_M
+original_gene_list <- df$log2FoldChange   #vector of fold change
+names(original_gene_list) <- rownames(df) #add gene names to the vector
+gene_list<-na.omit(original_gene_list)    #remove NAs
+gene_list<- sort(gene_list, decreasing=T) #sort it out
+
+organism <- org.At.tair.db
+gse <- gseGO(geneList=gene_list, 
+             ont ="ALL", 
+             keyType = "TAIR", 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
+
+
+```
+
+
+```{r, fig.height=8, fig.width=8}
+
+require(DOSE)
+dotplot(gse, showCategory=10, split=".sign") + 
+  facet_grid(.~.sign)
+
+
+
+```
+
+```{r}
+
+GOE <- as.data.frame(gse)
+
+```
+
+
