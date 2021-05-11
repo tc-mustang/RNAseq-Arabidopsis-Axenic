@@ -68,8 +68,14 @@ For batch processing all the bam files check the [Counting Script][counting]
 
 ### Normalization and DGE
 
+Differential gene expression was performed using [DESEQ2][DSlink]       
+All the code can be found as an R notebook [here][Rnotebook_main]  
+   
 
 
+## Contact:
+
+Roberto Lozano - rlozano.fi@gmail.com 
 
 
 
@@ -81,3 +87,5 @@ For batch processing all the bam files check the [Counting Script][counting]
 [mapping]: scripts/mapping.sh
 [counting]: script/counting.sh
 [BioProject]: https://www.ncbi.nlm.nih.gov/sra/PRJNA725487
+[DSlink]: https://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0550-8
+[Rnotebook_main]: script/

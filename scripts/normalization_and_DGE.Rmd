@@ -1,8 +1,8 @@
 ---
 title: "DESEQ2"
 output:
-  html_notebook: default
   pdf_document: default
+  html_notebook: default
 ---
 
 Normalization of read counts using DESEQ2
@@ -193,7 +193,7 @@ library(organism, character.only = T)
 
 
 
-df <- visualizar
+df <- DEG_dataframe
 original_gene_list <- df$log2FoldChange   #vector of fold change
 names(original_gene_list) <- rownames(df) #add gene names to the vector
 gene_list<-na.omit(original_gene_list)    #remove NAs
