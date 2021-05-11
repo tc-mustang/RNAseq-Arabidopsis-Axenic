@@ -1,3 +1,8 @@
+[![MIT License][license-shield]][license-url]
+![Issues][issues-url]
+![Languages][languages-url]
+![Commit][last-commit]
+
 # RNAseq-Arabidopsis-Axenic
 RNAseq analysis associated to the article: "Fill the blank"
 
@@ -89,3 +94,8 @@ Roberto Lozano - rlozano.fi@gmail.com
 [BioProject]: https://www.ncbi.nlm.nih.gov/sra/PRJNA725487
 [DSlink]: https://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0550-8
 [Rnotebook_main]: script/
+[license-shield]: https://img.shields.io/github/license/tc-mustang/RNAseq-Arabidopsis-Axenic?style=for-the-badge
+[license-url]: https://github.com/tc-mustang/RNAseq-Arabidopsis-Axenic/blob/main/LICENSE
+[issues-url]: https://img.shields.io/github/issues/tc-mustang/RNAseq-Arabidopsis-Axenic?style=for-the-badge
+[languages-url]: https://img.shields.io/github/languages/count/tc-mustang/RNAseq-Arabidopsis-Axenic?style=for-the-badge
+[last-commit]: https://img.shields.io/github/last-commit/tc-mustang/RNAseq-Arabidopsis-Axenic?color=orange&style=for-the-badge
